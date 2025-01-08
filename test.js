@@ -246,7 +246,7 @@ const progress = document.createElement("progress");
 progress.max = document.querySelectorAll("#arena_content span.help").length;
 progress.value = 0;
 bk.append(progress);
-document.body.innerHTML += `<p>${progress.max}</p>`;	/*★*/
+alert(`<p>${progress.max}</p>`);	/*★*/
 {
 	function miwl(key, common_id, val, right_text){
 		const label = document.createElement("label");
@@ -314,7 +314,7 @@ for(let i = 0; i < helps.length; i++){
 	if(!help.textContent.includes("L")){
 		continue;
 	}
-document.body.innerHTML += `<p>${help.textContent}</p>`;	/*★*/
+alert(`<p>${help.textContent}</p>`);	/*★*/
 	help.dispatchEvent(mouseOverEvent);
 	await Wait.add();
 	await Wait.time(0.5);
