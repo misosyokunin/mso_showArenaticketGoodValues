@@ -1,5 +1,8 @@
 javascript:(async()=>{
 "use strict";
+
+const VERSION = "1.0.0";
+
 /*
 ┏━━━━━━━━━━━━━━━━━┓
 ┃ＭＳＯ＿アリーナチケットの価値表示┃
@@ -135,7 +138,7 @@ const CONSTANTS = {
 	"https://minesweeper.online/img/activity/": "アクティビティ",	/*アクティビティ全般*/
 	"https://minesweeper.online/img/candies/": "イベントポイント",	/*イベントポイント全般*/
 };
-
+const RE_CONSTATNTS = Object.fromEntries(Object.entries(CONSTANTS).map(([key, value]) => [value, key]));
 const InitValues = {
 	"経験": MyStorage.get("value_経験") ?? 0.06,
 	"コイン": MyStorage.get("value_コイン") ?? 1,
@@ -159,12 +162,115 @@ const InitStatus = {
 	"アクティビティ": MyStorage.get("stat_アクティビティ") ?? 45,
 	"イベントポイント": MyStorage.get("stat_イベントポイント") ?? 65,
 	"アリーナコイン": MyStorage.get("stat_アリーナコイン") ?? 45,
+	"名誉ポイント": MyStorage.get("stat_名誉ポイント") ?? 200,
 };
 
 /*＝＝＝＝＝＝＝＝＝＝【実行前ユーザー入力】＝＝＝＝＝＝＝＝＝＝*/
+document.getElementById("______style")?.remove();
+const SCRIPT_STYLE = document.createElement("style");
+SCRIPT_STYLE.id = "______style";
+SCRIPT_STYLE.innerHTML = `
+#___________bk{
+	position: fixed;
+	top: 0px;
+	left: 0px;
+	background-color: rgba(0, 0, 0, 0.5);
+	width: 100vw;
+	height: 100vh;
+	font-size: 2em;
+	z-index: 10000;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	flex-direction: column;
+	scrollbar-gutter: unset;
+}
+.isHidden{
+	display: none !important;
+}
+#_____Version{
+	position: fixed;
+	bottom: 0px;
+	right: 0px;
+	color: #888;
+	font-size: 20px;
+}
+#___________bk > form{
+	font-size: 16px;
+	display: flex;
+	flex-direction: column;
+	overflow-y: scroll;
+	width: 90%;
+	max-height: 50%;
+}
+#___________bk > form > details{
+	padding: 1em 0px;
+}
+#___________bk > form > details > summary{
+	font-size: 1.5em;
+	cursor: pointer;
+	background-color: rgba(255, 0, 255, 0.3);
+}
+#___________bk > form > details > label{
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+#___________bk > form > details > label:focus-within{
+	background-color: rgba(0, 255, 0, 0.2);
+}
+#___________bk > form > details > label > span:nth-of-type(1){
+	flex-grow: 1;
+	display: flex;	/*アイコンの縦位置を揃える*/
+}
+#___________bk > form > details > label > span:nth-of-type(1):before {
+	content: "";
+	width: 1.3em;
+	height: 1.3em;
+	display: inline-block;
+	background-image: var(--img);
+	background-size: contain;
+}
+#___________bk > form > details > label > input{
+	flex-shrink: 1;
+}
+#___________bk > form > details > label > span:nth-of-type(2){
+	flex-shrink: 1;
+}
+
+#____valueTable{
+	border-collapse: collapse;
+	width: 100%;
+}
+#____valueTable > thead > tr > th{
+	border: solid 1px #444;
+	padding: 8px 16px;
+	cursor: pointer;
+}
+#____valueTable > tbody > tr > td{
+	border: solid 1px #444;
+	padding: 8px 16px;
+}
+.strong1{
+	background-color: rgba(0, 255, 0, 0.3);
+}
+.strong2{
+	background-color: rgba(255, 255, 0, 0.3);
+}
+.strong3{
+	background-color: rgba(255, 0, 0, 0.3);
+}
+.strong11{
+	background-color: rgba(255, 0, 255, 0.3);
+}
+
+`;
+
+
 const bk = document.createElement("div");
-bk.style = "position:fixed; top: 0px; left: 0px; background-color: rgba(0, 0, 0, 0.5); width: 100vw; height: 100vh; font-size: 2em; z-index: 10000; display: flex; justify-content: center; align-items: center; flex-direction: column; scrollbar-gutter: unset;";
+bk.id = "___________bk";
 document.body.append(bk);
+document.body.append(SCRIPT_STYLE);
 
 
 /*＝＝＝＝＝＝＝＝＝＝【実行前定数セット】＝＝＝＝＝＝＝＝＝＝*/
@@ -194,6 +300,13 @@ const observer = new MutationObserver(async function (mutations) {
 	const to = {};
 	for(let i = 0; i < divs.length; i++){
 		const div = divs[i];
+		{
+			const icon = div.querySelector(".ticket");
+			if(icon){
+				to["アイコン"] = icon.outerHTML;
+				continue;
+			}
+		}
 		if(div.textContent.includes("種別：")){
 			to["種別"] = div.textContent;
 			continue;
@@ -231,7 +344,7 @@ observer.observe(target, {
 });
 
 /*＝＝＝＝＝＝＝＝＝＝【実行中ユーザー入力】＝＝＝＝＝＝＝＝＝＝*/
-document.getElementById("__________removeTable")?.remove();
+document.getElementById("____valueTable")?.remove();
 bk.innerText = "アリーナデータを取得しています…\nしばらくお待ちください…";
 {
 	const button = document.createElement("button");
@@ -242,6 +355,15 @@ bk.innerText = "アリーナデータを取得しています…\nしばらく�
 	});
 	bk.append(button);
 }
+{
+	const version = document.createElement("span");
+	version.id = "_____Version";
+	version.textContent = `ver:${VERSION}`;
+	version.addEventListener("click", () => {
+		toggleFullscreen();
+	});
+	bk.append(version);
+}
 const progress = document.createElement("progress");
 progress.max = document.querySelectorAll("#arena_content span.help").length;
 progress.value = 0;
@@ -251,7 +373,10 @@ bk.append(progress);
 		const label = document.createElement("label");
 		const left_span = document.createElement("span");
 		left_span.textContent = key;
-		left_span.style = "flex-grow: 1;";
+		const src = RE_CONSTATNTS[key];
+		if(src && src.endsWith("svg")){
+			left_span.style = `--img: url('${src}');`;
+		}
 		label.append(left_span);
 		const input = document.createElement("input");
 		input.type = "number";
@@ -259,43 +384,34 @@ bk.append(progress);
 		input.min = 0;
 		input.step = 1;
 		input.value = val;
-		input.style = "flex-shrink: 1;";
 		label.append(input);
 		const right_span = document.createElement("span");
 		right_span.textContent = right_text;
-		right_span.style = "flex-shrink: 1;";
 		label.append(right_span);
 		return label;
 	}
 	{
 		const form = document.createElement("form");
-		form.style = "font-size: 16px; display: flex; flex-direction: column; overflow-y: scroll; width: 90%; max-height: 50%;";
 		bk.append(form);
 		{
 			const details = document.createElement("details");
-			details.style = "padding: 1em 0px;";
 			form.append(details);
 			const summary = document.createElement("summary");
 			summary.textContent = "装備補正";
-			summary.style = "font-size: 1.5em; cursor: pointer; background-color: rgba(255, 0, 255, 0.3);";
 			details.append(summary);
 			for(const [key, value] of Object.entries(InitStatus)){
 				const label = miwl(key, "装備補正：", value, "+%");
-				label.style = "display: flex; justify-content: center; margin-right: 10px;";
 				details.append(label);
 			}
 		}
 		{
 			const details = document.createElement("details");
-			details.style = "padding: 1em 0px;";
 			form.append(details);
 			const summary = document.createElement("summary");
 			summary.textContent = "換算値";
-			summary.style = "font-size: 1.5em; cursor: pointer; background-color: rgba(255, 0, 255, 0.3);";
 			details.append(summary);
 			for(const [key, value] of Object.entries(InitValues)){
 				const label = miwl(key, "換算値：", value, "mc");
-				label.style = "display: flex; justify-content: center;";
 				details.append(label);
 			}
 		}
@@ -379,14 +495,13 @@ function sortTable(){
 		}
 	}
 }
-bk.style = "display: none";
+bk.classList.add("isHidden");
 {
 	const table = document.createElement("table");
-	table.id = "__________removeTable";
-	table.style = "border-collapse: collapse; width: 100%;";
+	table.id = "____valueTable";
 	{
 		const caption = document.createElement("caption");
-		caption.textContent = "アリーナチケット価格とか早見表";
+		caption.textContent = `アリーナチケット価格とか早見表（ver:${VERSION}）`;
 		table.append(caption);
 	}
 	{
@@ -398,25 +513,21 @@ bk.style = "display: none";
 			{
 				const th = document.createElement("th");
 				th.textContent = "種別";
-				th.style = "border: solid 1px #444; padding: 8px 16px; cursor: pointer;";
 				tr.append(th);
 			}
 			{
 				const th = document.createElement("th");
 				th.textContent = "市場価格";
-				th.style = "border: solid 1px #444; padding: 8px 16px; cursor: pointer;";
 				tr.append(th);
 			}
 			{
 				const th = document.createElement("th");
 				th.textContent = "＊価値";
-				th.style = "border: solid 1px #444; padding: 8px 16px; cursor: pointer;";
 				tr.append(th);
 			}
 			{
 				const th = document.createElement("th");
 				th.textContent = "＊美味しさ";
-				th.style = "border: solid 1px #444; padding: 8px 16px; cursor: pointer;";
 				tr.append(th);
 			}
 		}
@@ -462,36 +573,39 @@ bk.style = "display: none";
 					const td = document.createElement("td");
 					td.textContent = data["種別"].replace(/.+：/, "");
 					td.dataset.truenum = index;
-					td.style = "border: solid 1px #444; padding: 8px 16px;";
 					tr.append(td);
+					const dummy = document.createElement("p");
+					dummy.innerHTML = data["アイコン"];
+					td.append(dummy.querySelector("i"));
 				}
 				{
 					const td = document.createElement("td");
 					td.textContent = sizyou;
-					td.style = "border: solid 1px #444; padding: 8px 16px;";
 					tr.append(td);
 				}
 				{
 					const td = document.createElement("td");
 					td.textContent = sum;
-					td.style = "border: solid 1px #444; padding: 8px 16px;";
 					tr.append(td);
 				}
 				{
 					const td = document.createElement("td");
 					const num = (sum / sizyou).toFixed(2);
 					td.textContent = num;
-					let addStyle = "";
-					if(num >= 2.0){
-						addStyle = "background-color: rgba(0, 255, 0, 0.3);";
+					switch(true){
+						case num >= 3.0:
+							td.classList.add("strong3");
+							break;
+						case num >= 2.5:
+							td.classList.add("strong2");
+							break;
+						case num >= 2.0:
+							td.classList.add("strong1");
+							break;
+						case num <= 1.0:
+							td.classList.add("strong11");
+							break;
 					}
-					if(num >= 2.5){
-						addStyle = "background-color: rgba(255, 255, 0, 0.3);";
-					}
-					if(num >= 3.0){
-						addStyle = "background-color: rgba(255, 0, 0, 0.3);";
-					}
-					td.style = `border: solid 1px #444; padding: 8px 16px;${addStyle}`;
 					tr.append(td);
 				}
 			});
@@ -525,6 +639,7 @@ MyStorage.set("stat_コイン", document.getElementById("_装備補正：コイ�
 MyStorage.set("stat_アクティビティ", document.getElementById("_装備補正：アクティビティ").value);
 MyStorage.set("stat_イベントポイント", document.getElementById("_装備補正：イベントポイント").value);
 MyStorage.set("stat_アリーナコイン", document.getElementById("_装備補正：アリーナコイン").value);
+MyStorage.set("stat_名誉ポイント", document.getElementById("_装備補正：名誉ポイント").value);
 MyStorage.save();
 
 bk.remove();
